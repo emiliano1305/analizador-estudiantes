@@ -16,10 +16,17 @@ from matplotlib.backends.backend_pdf import PdfPages
 # CONFIGURACIÓN
 # ============================================================
 
+```python
 st.set_page_config(
     page_title="Analizador de estudiantes",
-    page_icon="🎓",
+    page_icon="UNAJ.png",
     layout="wide"
+)
+
+st.image("UNAJ.png", width=120)
+
+st.title("Analizador de estudiantes")
+```
 
 
 # Título
