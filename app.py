@@ -22,7 +22,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Logo de la unaj
+# Logo de la UNAJ
 st.image("unaj.png", width=120)
 
 st.title("Analizador de estudiantes")
@@ -44,6 +44,16 @@ NOMBRE_ASIGNATURA = {
     "arquitectura_nube": "Arquitecturas en la nube",
     "aprendizaje_automatico": "Aprendizaje automático",
     "captura_informacion": "Captura de información",
+}
+
+# Un color fijo para cada asignatura
+COLORES_ASIGNATURAS = {
+    "programacion": "#4CAF50",
+    "bases_datos": "#2196F3",
+    "estadistica": "#FF9800",
+    "arquitectura_nube": "#9C27B0",
+    "aprendizaje_automatico": "#F44336",
+    "captura_informacion": "#00ACC1",
 }
 
 NOTA_APROBACION = 6.0
@@ -448,13 +458,19 @@ def crear_grafico_promedios(promedios):
         for a in ASIGNATURAS
     ]
 
+    colores = [
+        COLORES_ASIGNATURAS[a]
+        for a in ASIGNATURAS
+    ]
+
     fig, ax = plt.subplots(
-        figsize=(12, 6)
+        figsize=(9, 4.5)
     )
 
     barras = ax.bar(
         etiquetas,
-        valores
+        valores,
+        color=colores
     )
 
     ax.set_title(
@@ -472,7 +488,8 @@ def crear_grafico_promedios(promedios):
 
     ax.tick_params(
         axis="x",
-        rotation=25
+        rotation=25,
+        labelsize=8
     )
 
     ax.grid(
@@ -492,7 +509,8 @@ def crear_grafico_promedios(promedios):
 
             f"{valor:.2f}",
 
-            ha="center"
+            ha="center",
+            fontsize=8
         )
 
     fig.tight_layout()
@@ -515,13 +533,19 @@ def crear_grafico_aprobacion(aprobacion):
         for a in ASIGNATURAS
     ]
 
+    colores = [
+        COLORES_ASIGNATURAS[a]
+        for a in ASIGNATURAS
+    ]
+
     fig, ax = plt.subplots(
-        figsize=(12, 6)
+        figsize=(9, 4.5)
     )
 
     barras = ax.bar(
         etiquetas,
-        valores
+        valores,
+        color=colores
     )
 
     ax.set_title(
@@ -539,7 +563,8 @@ def crear_grafico_aprobacion(aprobacion):
 
     ax.tick_params(
         axis="x",
-        rotation=25
+        rotation=25,
+        labelsize=8
     )
 
     ax.grid(
@@ -559,7 +584,8 @@ def crear_grafico_aprobacion(aprobacion):
 
             f"{valor:.1f}%",
 
-            ha="center"
+            ha="center",
+            fontsize=8
         )
 
     fig.tight_layout()
@@ -581,7 +607,7 @@ def crear_grafico_estado(
     ]
 
     fig, ax = plt.subplots(
-        figsize=(7, 5)
+        figsize=(6, 4)
     )
 
     barras = ax.bar(
@@ -589,7 +615,11 @@ def crear_grafico_estado(
             "Aprobados",
             "Reprobados"
         ],
-        valores
+        valores,
+        color=[
+            "#4CAF50",
+            "#F44336"
+        ]
     )
 
     ax.set_title(
@@ -617,7 +647,8 @@ def crear_grafico_estado(
 
             str(valor),
 
-            ha="center"
+            ha="center",
+            fontsize=8
         )
 
     fig.tight_layout()
@@ -753,9 +784,15 @@ def generar_pdf(
             for a in ASIGNATURAS
         ]
 
+        colores_pdf = [
+            COLORES_ASIGNATURAS[a]
+            for a in ASIGNATURAS
+        ]
+
         barras = ax.bar(
             range(len(valores)),
-            valores
+            valores,
+            color=colores_pdf
         )
 
         ax.set_xticks(
