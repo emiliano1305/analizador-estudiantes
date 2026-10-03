@@ -1279,4 +1279,3 @@ if archivo is not None:
         st.error(
             f"❌ No se pudo analizar el archivo: {e}"
         )
-```
