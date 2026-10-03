@@ -16,16 +16,11 @@ from matplotlib.backends.backend_pdf import PdfPages
 # CONFIGURACIÓN
 # ============================================================
 
-import streamlit as st
-
 st.set_page_config(
     page_title="Analizador de estudiantes",
-    page_icon="icono_UNAJ.png",
+    page_icon="🎓",
     layout="wide"
-)
 
-# Logo UNAJ
-st.image("icono_UNAJ.png", width=180)
 
 # Título
 st.title("Analizador de estudiantes")
