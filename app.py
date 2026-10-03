@@ -1,3 +1,4 @@
+```python
 import io
 import csv
 import re
@@ -16,21 +17,17 @@ from matplotlib.backends.backend_pdf import PdfPages
 # CONFIGURACIÓN
 # ============================================================
 
-```python
 st.set_page_config(
     page_title="Analizador de estudiantes",
     page_icon="UNAJ.png",
     layout="wide"
 )
 
+# Logo de la UNAJ
 st.image("UNAJ.png", width=120)
 
 st.title("Analizador de estudiantes")
-```
 
-
-# Título
-st.title("Analizador de estudiantes")
 
 ASIGNATURAS = (
     "programacion",
@@ -69,7 +66,6 @@ class Estudiante:
     captura_informacion: float
 
     def __post_init__(self):
-
         self.nombre = self.nombre.strip()
         self.apellido = self.apellido.strip()
 
@@ -79,7 +75,6 @@ class Estudiante:
             )
 
         for asignatura in ASIGNATURAS:
-
             nota = getattr(self, asignatura)
 
             if not isinstance(nota, (int, float)) or isinstance(nota, bool):
@@ -108,7 +103,6 @@ class Estudiante:
         return mean(self.notas().values())
 
     def promedio_sin_aplazos(self):
-
         aprobadas = [
             n
             for n in self.notas().values()
@@ -118,7 +112,6 @@ class Estudiante:
         return mean(aprobadas) if aprobadas else None
 
     def asignaturas_desaprobadas(self):
-
         return [
             a
             for a, n in self.notas().items()
@@ -126,17 +119,12 @@ class Estudiante:
         ]
 
     def cantidad_de_aplazos(self):
-
-        return len(
-            self.asignaturas_desaprobadas()
-        )
+        return len(self.asignaturas_desaprobadas())
 
     def esta_aprobado(self):
-
         return self.cantidad_de_aplazos() == 0
 
     def estado(self):
-
         return (
             "Aprobado"
             if self.esta_aprobado()
@@ -149,7 +137,6 @@ class Estudiante:
 # ============================================================
 
 def convertir_nota(valor, fila, columna):
-
     texto = str(valor).strip().replace(",", ".")
 
     if not texto:
@@ -159,9 +146,7 @@ def convertir_nota(valor, fila, columna):
 
     try:
         return float(texto)
-
     except ValueError:
-
         raise ValueError(
             f"Fila {fila}: {columna} debe contener un número."
         )
@@ -172,7 +157,6 @@ def convertir_nota(valor, fila, columna):
 # ============================================================
 
 def cargar_estudiantes(datos):
-
     muestra = datos[:4096]
 
     texto_muestra = muestra.decode(
@@ -181,14 +165,11 @@ def cargar_estudiantes(datos):
     )
 
     try:
-
         dialecto = csv.Sniffer().sniff(
             texto_muestra,
             delimiters=",;"
         )
-
     except csv.Error:
-
         dialecto = csv.excel
 
     texto = datos.decode("utf-8-sig")
@@ -199,40 +180,22 @@ def cargar_estudiantes(datos):
     )
 
     if not lector.fieldnames:
-
         raise ValueError(
             "El CSV no tiene encabezados."
         )
 
     alias_columnas = {
-
-        "bases_d_datos":
-            "bases_datos",
-
-        "analisis_estadistico":
-            "estadistica",
-
-        "arq_nube":
-            "arquitectura_nube",
-
-        "arquitectura_en_la_nube":
-            "arquitectura_nube",
-
-        "arquitecturas_en_la_nube":
-            "arquitectura_nube",
-
-        "ap_automatico":
-            "aprendizaje_automatico",
-
-        "captura_de_informacion":
-            "captura_informacion",
-
-        "cap_informacion":
-            "captura_informacion",
+        "bases_d_datos": "bases_datos",
+        "analisis_estadistico": "estadistica",
+        "arq_nube": "arquitectura_nube",
+        "arquitectura_en_la_nube": "arquitectura_nube",
+        "arquitecturas_en_la_nube": "arquitectura_nube",
+        "ap_automatico": "aprendizaje_automatico",
+        "captura_de_informacion": "captura_informacion",
+        "cap_informacion": "captura_informacion",
     }
 
     def normalizar_columna(columna):
-
         texto = unicodedata.normalize(
             "NFKD",
             str(columna)
@@ -255,9 +218,7 @@ def cargar_estudiantes(datos):
             clave
         )
 
-    originales = list(
-        lector.fieldnames
-    )
+    originales = list(lector.fieldnames)
 
     normalizados = [
         normalizar_columna(c)
@@ -265,7 +226,6 @@ def cargar_estudiantes(datos):
     ]
 
     if len(set(normalizados)) != len(normalizados):
-
         raise ValueError(
             "Hay encabezados duplicados o equivalentes "
             "luego de normalizarlos."
@@ -283,7 +243,6 @@ def cargar_estudiantes(datos):
     )
 
     if faltantes:
-
         raise ValueError(
             "Faltan columnas obligatorias: "
             + ", ".join(sorted(faltantes))
@@ -302,7 +261,6 @@ def cargar_estudiantes(datos):
         lector,
         start=2
     ):
-
         if original and all(
             v is None or not str(v).strip()
             for v in original.values()
@@ -310,30 +268,24 @@ def cargar_estudiantes(datos):
             continue
 
         if None in original and original[None]:
-
             raise ValueError(
                 f"Fila {numero}: hay más valores "
                 "que columnas en el encabezado."
             )
 
         fila = {
-            canonica:
-                (
-                    original.get(
-                        columna_original[canonica]
-                    )
-                    or ""
-                ).strip()
-
+            canonica: (
+                original.get(
+                    columna_original[canonica]
+                )
+                or ""
+            ).strip()
             for canonica in requeridas
         }
 
         estudiante = Estudiante(
-
             nombre=fila["nombre"],
-
             apellido=fila["apellido"],
-
             **{
                 a: convertir_nota(
                     fila[a],
@@ -344,12 +296,9 @@ def cargar_estudiantes(datos):
             }
         )
 
-        estudiantes.append(
-            estudiante
-        )
+        estudiantes.append(estudiante)
 
     if not estudiantes:
-
         raise ValueError(
             "El archivo no contiene estudiantes."
         )
@@ -362,18 +311,14 @@ def cargar_estudiantes(datos):
 # ============================================================
 
 def crear_tabla_datos(estudiantes):
-
     datos_tabla = []
 
     for e in estudiantes:
-
         fila = {
-            "Estudiante":
-                e.nombre_completo
+            "Estudiante": e.nombre_completo
         }
 
         for a in ASIGNATURAS:
-
             fila[
                 NOMBRE_ASIGNATURA[a]
             ] = getattr(e, a)
@@ -388,17 +333,13 @@ def crear_tabla_datos(estudiantes):
 # ============================================================
 
 def crear_analisis_individual(estudiantes):
-
     individual = []
 
     for e in estudiantes:
-
         sin = e.promedio_sin_aplazos()
 
         individual.append({
-
-            "Estudiante":
-                e.nombre_completo,
+            "Estudiante": e.nombre_completo,
 
             "Promedio con aplazos":
                 e.promedio_con_aplazos(),
@@ -428,29 +369,22 @@ def crear_analisis_individual(estudiantes):
 # ============================================================
 
 def calcular_estadisticas(estudiantes):
-
     promedios = {
-
-        a:
-            mean(
-                getattr(e, a)
-                for e in estudiantes
-            )
-
+        a: mean(
+            getattr(e, a)
+            for e in estudiantes
+        )
         for a in ASIGNATURAS
     }
 
     aprobacion = {
-
         a:
             100
             * sum(
-                getattr(e, a)
-                >= NOTA_APROBACION
+                getattr(e, a) >= NOTA_APROBACION
                 for e in estudiantes
             )
             / len(estudiantes)
-
         for a in ASIGNATURAS
     }
 
@@ -466,7 +400,6 @@ def calcular_estadisticas(estudiantes):
     )
 
     df_estadisticas = pd.DataFrame([
-
         {
             "Asignatura":
                 NOMBRE_ASIGNATURA[a],
@@ -477,7 +410,6 @@ def calcular_estadisticas(estudiantes):
             "Aprobación (%)":
                 aprobacion[a]
         }
-
         for a in ASIGNATURAS
     ])
 
@@ -507,7 +439,6 @@ def calcular_estadisticas(estudiantes):
 # ============================================================
 
 def crear_grafico_promedios(promedios):
-
     etiquetas = [
         NOMBRE_ASIGNATURA[a]
         for a in ASIGNATURAS
@@ -554,7 +485,6 @@ def crear_grafico_promedios(promedios):
         barras,
         valores
     ):
-
         ax.text(
             barra.get_x()
             + barra.get_width() / 2,
@@ -576,7 +506,6 @@ def crear_grafico_promedios(promedios):
 # ============================================================
 
 def crear_grafico_aprobacion(aprobacion):
-
     etiquetas = [
         NOMBRE_ASIGNATURA[a]
         for a in ASIGNATURAS
@@ -623,7 +552,6 @@ def crear_grafico_aprobacion(aprobacion):
         barras,
         valores
     ):
-
         ax.text(
             barra.get_x()
             + barra.get_width() / 2,
@@ -648,7 +576,6 @@ def crear_grafico_estado(
     cantidad_aprobados,
     cantidad_reprobados
 ):
-
     valores = [
         cantidad_aprobados,
         cantidad_reprobados
@@ -683,7 +610,6 @@ def crear_grafico_estado(
         barras,
         valores
     ):
-
         ax.text(
             barra.get_x()
             + barra.get_width() / 2,
@@ -714,7 +640,6 @@ def generar_pdf(
     mayor,
     menor
 ):
-
     buffer = io.BytesIO()
 
     with PdfPages(buffer) as pdf:
@@ -738,24 +663,20 @@ def generar_pdf(
         fig.text(
             0.05,
             0.91,
-
             f"Archivo: {nombre_archivo} | "
             f"Generado: "
             f"{datetime.now().strftime('%d/%m/%Y %H:%M')} | "
             f"Estudiantes: {len(estudiantes)}",
-
             fontsize=9
         )
 
         fig.text(
             0.05,
             0.865,
-
             f"Aprobación global: "
             f"{cantidad_aprobados}/"
             f"{len(estudiantes)} estudiantes "
             f"({porcentaje_aprobados:.1f}%)",
-
             fontsize=12,
             weight="bold"
         )
@@ -763,11 +684,9 @@ def generar_pdf(
         fig.text(
             0.05,
             0.835,
-
             "Criterio: aprobado si obtiene nota ≥ 6 "
             "en las seis asignaturas. "
             "El promedio sin aplazos excluye notas menores a 6.",
-
             fontsize=8.5
         )
 
@@ -783,32 +702,24 @@ def generar_pdf(
         ax_tabla.axis("off")
 
         resumen_celdas = [
-
             [
                 NOMBRE_ASIGNATURA[a],
                 f"{promedios[a]:.2f}",
                 f"{aprobacion[a]:.1f}%"
             ]
-
             for a in ASIGNATURAS
         ]
 
         tabla = ax_tabla.table(
-
             cellText=resumen_celdas,
-
             colLabels=[
                 "Asignatura",
                 "Promedio",
                 "Aprobación"
             ],
-
             loc="center",
-
             cellLoc="left",
-
             colLoc="left",
-
             colWidths=[
                 0.58,
                 0.20,
@@ -816,18 +727,9 @@ def generar_pdf(
             ]
         )
 
-        tabla.auto_set_font_size(
-            False
-        )
-
-        tabla.set_fontsize(
-            8.5
-        )
-
-        tabla.scale(
-            1,
-            1.8
-        )
+        tabla.auto_set_font_size(False)
+        tabla.set_fontsize(8.5)
+        tabla.scale(1, 1.8)
 
         ax = fig.add_axes(
             [
@@ -891,7 +793,6 @@ def generar_pdf(
             barras,
             valores
         ):
-
             ax.text(
                 barra.get_x()
                 + barra.get_width() / 2,
@@ -911,11 +812,9 @@ def generar_pdf(
         fig.text(
             0.05,
             0.135,
-
             f"Mayor rendimiento: "
             f"{NOMBRE_ASIGNATURA[mayor]} "
             f"({promedios[mayor]:.2f})",
-
             fontsize=9,
             weight="bold"
         )
@@ -923,11 +822,9 @@ def generar_pdf(
         fig.text(
             0.05,
             0.105,
-
             f"Menor rendimiento: "
             f"{NOMBRE_ASIGNATURA[menor]} "
             f"({promedios[menor]:.2f})",
-
             fontsize=9,
             weight="bold"
         )
@@ -935,11 +832,9 @@ def generar_pdf(
         fig.text(
             0.05,
             0.055,
-
             "La aprobación por asignatura se muestra "
             "en la tabla; la aprobación global requiere "
             "aprobar las seis materias.",
-
             fontsize=8
         )
 
@@ -975,7 +870,6 @@ def generar_pdf(
             )
 
             notas_mostradas = [
-
                 f"{getattr(e, a):.1f}"
                 + (
                     "*"
@@ -983,28 +877,22 @@ def generar_pdf(
                     < NOTA_APROBACION
                     else ""
                 )
-
                 for a in ASIGNATURAS
             ]
 
             todas_las_filas.append(
-
                 [
                     e.nombre_completo,
                     *notas_mostradas,
-
                     f"{e.promedio_con_aplazos():.2f}",
-
                     (
                         "—"
                         if promedio_sin is None
                         else f"{promedio_sin:.2f}"
                     ),
-
                     str(
                         e.cantidad_de_aplazos()
                     ),
-
                     e.estado()
                 ]
             )
@@ -1057,44 +945,29 @@ def generar_pdf(
             ax.axis("off")
 
             fig.suptitle(
-
                 f"Detalle individual de estudiantes "
                 f"— página {pagina}",
-
                 x=0.05,
-
                 y=0.96,
-
                 ha="left",
-
                 fontsize=16,
-
                 weight="bold"
             )
 
             fig.text(
-
                 0.05,
                 0.91,
-
                 "* Nota menor que 6 (aplazo). "
                 "El promedio sin aplazos excluye esas notas.",
-
                 fontsize=8
             )
 
             tabla = ax.table(
-
                 cellText=bloque,
-
                 colLabels=encabezados,
-
                 cellLoc="center",
-
                 colLoc="center",
-
                 colWidths=anchos,
-
                 bbox=[
                     0.02,
                     0.08,
@@ -1103,22 +976,14 @@ def generar_pdf(
                 ]
             )
 
-            tabla.auto_set_font_size(
-                False
-            )
-
-            tabla.set_fontsize(
-                6.8
-            )
+            tabla.auto_set_font_size(False)
+            tabla.set_fontsize(6.8)
 
             fig.text(
-
                 0.05,
                 0.035,
-
                 f"Reporte académico | "
                 f"{len(estudiantes)} estudiante(s)",
-
                 fontsize=7
             )
 
@@ -1137,8 +1002,6 @@ def generar_pdf(
 # ============================================================
 # INTERFAZ
 # ============================================================
-
-st.title("🎓 Analizador de estudiantes")
 
 st.write(
     "Subí un archivo CSV para analizar el rendimiento "
@@ -1293,7 +1156,6 @@ if archivo is not None:
         col1, col2 = st.columns(2)
 
         with col1:
-
             st.info(
                 f"📈 Mayor promedio: "
                 f"{NOMBRE_ASIGNATURA[mayor]} "
@@ -1301,7 +1163,6 @@ if archivo is not None:
             )
 
         with col2:
-
             st.warning(
                 f"📉 Menor promedio: "
                 f"{NOMBRE_ASIGNATURA[menor]} "
@@ -1386,7 +1247,6 @@ if archivo is not None:
         col1, col2, col3 = st.columns(3)
 
         with col1:
-
             st.download_button(
                 label="📄 Descargar PDF",
                 data=pdf,
@@ -1395,7 +1255,6 @@ if archivo is not None:
             )
 
         with col2:
-
             st.download_button(
                 label="📊 Descargar análisis individual",
                 data=csv_individual,
@@ -1404,7 +1263,6 @@ if archivo is not None:
             )
 
         with col3:
-
             st.download_button(
                 label="📊 Descargar estadísticas",
                 data=csv_estadisticas,
@@ -1422,3 +1280,4 @@ if archivo is not None:
         st.error(
             f"❌ No se pudo analizar el archivo: {e}"
         )
+```
