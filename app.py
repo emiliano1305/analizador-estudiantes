@@ -193,17 +193,23 @@ def cargar_estudiantes(datos, extension):
         df = pd.DataFrame(lector)
 
     elif extension in ("xlsx", "xls"):
+        # Indicamos explícitamente el motor según la extensión para que
+        # el comportamiento sea previsible y el mensaje de error sea claro.
+        motor = "openpyxl" if extension == "xlsx" else "xlrd"
         try:
-            df = pd.read_excel(io.BytesIO(datos))
+            df = pd.read_excel(io.BytesIO(datos), engine=motor)
         except ImportError:
+            paquete = "openpyxl" if extension == "xlsx" else "xlrd"
             raise ValueError(
-                "No se pudo leer el archivo Excel. "
-                "Para XLSX necesitás tener instalado openpyxl; "
-                "para XLS, xlrd."
+                f"El archivo {extension.upper()} es válido, pero falta instalar "
+                f"el componente '{paquete}'. "
+                f"Instalalo con: pip install {paquete}."
             )
         except Exception as exc:
             raise ValueError(
-                f"No se pudo leer el archivo Excel: {exc}"
+                f"No se pudo leer el archivo {extension.upper()}. "
+                f"Verificá que sea un archivo de Excel válido y que la primera fila "
+                f"contenga los encabezados. Detalle: {exc}"
             )
     else:
         raise ValueError(
