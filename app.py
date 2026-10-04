@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from matplotlib.backends.backend_pdf import PdfPages
 
+TAMANO_A4 = (11.69, 8.27)  # A4 horizontal, en pulgadas
+
 
 # ============================================================
 # CONFIGURACIÓN
@@ -165,33 +167,57 @@ def convertir_nota(valor, fila, columna):
 # CARGAR Y VALIDAR CSV
 # ============================================================
 
-def cargar_estudiantes(datos):
-    muestra = datos[:4096]
+def cargar_estudiantes(datos, extension):
+    """Carga y valida archivos CSV, XLSX o XLS."""
+    if extension == "csv":
+        muestra = datos[:4096]
+        texto_muestra = muestra.decode("utf-8-sig", errors="replace")
 
-    texto_muestra = muestra.decode(
-        "utf-8-sig",
-        errors="replace"
-    )
+        try:
+            dialecto = csv.Sniffer().sniff(
+                texto_muestra,
+                delimiters=",;"
+            )
+        except csv.Error:
+            dialecto = csv.excel
 
-    try:
-        dialecto = csv.Sniffer().sniff(
-            texto_muestra,
-            delimiters=",;"
+        texto = datos.decode("utf-8-sig")
+        lector = csv.DictReader(
+            io.StringIO(texto),
+            dialect=dialecto
         )
-    except csv.Error:
-        dialecto = csv.excel
 
-    texto = datos.decode("utf-8-sig")
+        if not lector.fieldnames:
+            raise ValueError("El archivo CSV no tiene encabezados.")
 
-    lector = csv.DictReader(
-        io.StringIO(texto),
-        dialect=dialecto
-    )
+        df = pd.DataFrame(lector)
 
-    if not lector.fieldnames:
+    elif extension in ("xlsx", "xls"):
+        try:
+            df = pd.read_excel(io.BytesIO(datos))
+        except ImportError:
+            raise ValueError(
+                "No se pudo leer el archivo Excel. "
+                "Para XLSX necesitás tener instalado openpyxl; "
+                "para XLS, xlrd."
+            )
+        except Exception as exc:
+            raise ValueError(
+                f"No se pudo leer el archivo Excel: {exc}"
+            )
+    else:
         raise ValueError(
-            "El CSV no tiene encabezados."
+            "Formato no compatible. Subí un archivo CSV, XLSX o XLS."
         )
+
+    if df.empty:
+        raise ValueError("El archivo no contiene datos.")
+
+    # Elimina columnas completamente vacías, habituales en Excel.
+    df = df.dropna(axis=1, how="all")
+
+    if df.empty or len(df.columns) == 0:
+        raise ValueError("El archivo no contiene columnas con datos.")
 
     alias_columnas = {
         "bases_d_datos": "bases_datos",
@@ -205,34 +231,21 @@ def cargar_estudiantes(datos):
     }
 
     def normalizar_columna(columna):
-        texto = unicodedata.normalize(
-            "NFKD",
-            str(columna)
-        )
-
+        texto = unicodedata.normalize("NFKD", str(columna))
         texto = "".join(
-            c
-            for c in texto
+            c for c in texto
             if not unicodedata.combining(c)
         )
-
         clave = re.sub(
             r"[^a-z0-9]+",
             "_",
             texto.lower()
         ).strip("_")
 
-        return alias_columnas.get(
-            clave,
-            clave
-        )
+        return alias_columnas.get(clave, clave)
 
-    originales = list(lector.fieldnames)
-
-    normalizados = [
-        normalizar_columna(c)
-        for c in originales
-    ]
+    originales = list(df.columns)
+    normalizados = [normalizar_columna(c) for c in originales]
 
     if len(set(normalizados)) != len(normalizados):
         raise ValueError(
@@ -246,51 +259,43 @@ def cargar_estudiantes(datos):
         *ASIGNATURAS
     }
 
-    faltantes = (
-        requeridas
-        - set(normalizados)
-    )
+    faltantes = requeridas - set(normalizados)
 
     if faltantes:
+        faltantes_mostrados = [
+            NOMBRE_ASIGNATURA.get(
+                f,
+                f.replace("_", " ").capitalize()
+            )
+            for f in sorted(faltantes)
+        ]
+
         raise ValueError(
-            "Faltan columnas obligatorias: "
-            + ", ".join(sorted(faltantes))
+            "El archivo no tiene el formato necesario para realizar "
+            "el análisis.\n\n"
+            "Faltan estas columnas obligatorias: "
+            + ", ".join(faltantes_mostrados)
+            + ".\n\n"
+            "El encabezado debe incluir: Nombre, Apellido y las seis "
+            "asignaturas. No importa si están escritas con mayúsculas, "
+            "minúsculas o tildes."
         )
 
-    columna_original = dict(
-        zip(
-            normalizados,
-            originales
-        )
-    )
-
+    columna_original = dict(zip(normalizados, originales))
     estudiantes = []
 
-    for numero, original in enumerate(
-        lector,
-        start=2
-    ):
-        if original and all(
-            v is None or not str(v).strip()
-            for v in original.values()
+    for numero, (_, original) in enumerate(df.iterrows(), start=2):
+        if all(
+            pd.isna(v) or not str(v).strip()
+            for v in original.values
         ):
             continue
 
-        if None in original and original[None]:
-            raise ValueError(
-                f"Fila {numero}: hay más valores "
-                "que columnas en el encabezado."
-            )
+        fila = {}
 
-        fila = {
-            canonica: (
-                original.get(
-                    columna_original[canonica]
-                )
-                or ""
-            ).strip()
-            for canonica in requeridas
-        }
+        for canonica in requeridas:
+            valor = original[columna_original[canonica]]
+            fila[canonica] = "" if pd.isna(valor) else str(valor).strip()
 
         estudiante = Estudiante(
             nombre=fila["nombre"],
@@ -299,7 +304,7 @@ def cargar_estudiantes(datos):
                 a: convertir_nota(
                     fila[a],
                     numero,
-                    a
+                    NOMBRE_ASIGNATURA[a]
                 )
                 for a in ASIGNATURAS
             }
@@ -308,9 +313,7 @@ def cargar_estudiantes(datos):
         estudiantes.append(estudiante)
 
     if not estudiantes:
-        raise ValueError(
-            "El archivo no contiene estudiantes."
-        )
+        raise ValueError("El archivo no contiene estudiantes.")
 
     return estudiantes
 
@@ -675,7 +678,7 @@ def generar_pdf(
     with PdfPages(buffer) as pdf:
 
         fig = plt.figure(
-            figsize=(11.69, 8.27)
+            figsize=TAMANO_A4
         )
 
         fig.patch.set_facecolor(
@@ -874,10 +877,7 @@ def generar_pdf(
             fontsize=8
         )
 
-        pdf.savefig(
-            fig,
-            bbox_inches="tight"
-        )
+        pdf.savefig(fig)
 
         plt.close(fig)
 
@@ -971,7 +971,7 @@ def generar_pdf(
             ]
 
             fig, ax = plt.subplots(
-                figsize=(11.69, 8.27)
+                figsize=TAMANO_A4
             )
 
             fig.patch.set_facecolor(
@@ -1023,10 +1023,7 @@ def generar_pdf(
                 fontsize=7
             )
 
-            pdf.savefig(
-                fig,
-                bbox_inches="tight"
-            )
+            pdf.savefig(fig)
 
             plt.close(fig)
 
@@ -1040,13 +1037,15 @@ def generar_pdf(
 # ============================================================
 
 st.write(
-    "Subí un archivo CSV para analizar el rendimiento "
+    "Subí un archivo CSV o Excel para analizar el rendimiento "
     "académico de los estudiantes."
 )
 
+
 st.info(
     "El archivo debe contener las columnas "
-    "Nombre, Apellido y las seis asignaturas."
+    "Nombre, Apellido y las seis asignaturas. "
+    "Formatos aceptados: CSV, XLSX y XLS."
 )
 
 
@@ -1055,9 +1054,10 @@ st.info(
 # ============================================================
 
 archivo = st.file_uploader(
-    "📂 Seleccioná el archivo CSV",
-    type=["csv"]
+    "📂 Seleccioná el archivo de datos",
+    type=["csv", "xlsx", "xls"]
 )
+
 
 
 if archivo is not None:
@@ -1069,9 +1069,11 @@ if archivo is not None:
     try:
 
         contenido = archivo.getvalue()
+        extension = archivo.name.lower().rsplit(".", 1)[-1]
 
         estudiantes = cargar_estudiantes(
-            contenido
+            contenido,
+            extension
         )
 
         st.success(
@@ -1311,8 +1313,20 @@ if archivo is not None:
             "Podés descargar los resultados desde los botones."
         )
 
+    except ValueError as e:
+
+        st.error("❌ No se pudo analizar el archivo.")
+
+        st.warning(str(e))
+
+        st.info(
+            "💡 Formato esperado: una fila de encabezados con "
+            "Nombre, Apellido y las seis asignaturas. "
+            "Las notas deben ser números entre 0 y 10."
+        )
+
     except Exception as e:
 
         st.error(
-            f"❌ No se pudo analizar el archivo: {e}"
+            f"❌ Ocurrió un error inesperado al analizar el archivo: {e}"
         )
